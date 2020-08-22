@@ -1,0 +1,209 @@
+
+<!DOCTYPE html> 
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>10.3. Oblicz odległości</title>
+<style>
+   #container {
+      width:500px;
+   }
+
+   #mapCanvas {
+      width:500px;
+      height:300px;
+      border-style:solid;
+      border-width:2px;
+      margin: 22px 0;
+   }
+
+   #location {
+      float:right;
+      text-align:right;
+   }
+
+   #cityDistance tr:nth-child(odd) { background-color:#eee; }
+   #cityDistance tr:nth-child(even) { background-color:#fff; }
+
+   .numDistance {
+      text-align:right;
+   }
+</style>
+<script src="http://maps.google.com/maps/api/js?sensor=false&libraries=geometry"></script>
+<script>
+// zmienna globalna
+var map;
+
+// funkcja wywołania zwrotnego w przypadku pomyślnego wykonania getCurrentPosition
+function geoSuccess(position) {
+
+   // pobierz współrzędne geograficzne
+   var myPosLat = position.coords.latitude;
+   var myPosLng = position.coords.longitude;
+
+   // wyświetl pola współrzędnych
+   document.getElementById('myPosLat').innerHTML = myPosLat;
+   document.getElementById('myPosLng').innerHTML = myPosLng;
+
+   // utwórz obiekt LatLng
+   var myLatLng = new google.maps.LatLng(myPosLat, myPosLng);
+
+   // ustaw opcje dla mapy i utwórz mapę
+   var myOptions = {
+      zoom: 14,
+      center: myLatLng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+   }
+   map = new google.maps.Map(document.getElementById('mapCanvas'), myOptions);
+
+   // odwrócone geokodowanie szerokości i długości geograficznej
+   reverseGeoCode(myLatLng);
+
+   // oblicz odległość do interesujących Cię punktów
+   calculateDistance(myLatLng);
+
+   // aktualizuj status
+   document.getElementById('geoStatus').innerHTML = 'Uzyskano informację o położeniu';
+}
+
+// funkcja do odwróconego geokodowania przy danych szerokości i długości geograficznej
+function reverseGeoCode(geoLatLng) {
+
+  // utwórz instancje obiektów
+   var geocoder           = new google.maps.Geocoder();
+   var infowindow         = new google.maps.InfoWindow();
+
+   // wykonaj geokodowanie
+   geocoder.geocode({'latLng': geoLatLng}, function(results, status) {
+      if (status == google.maps.GeocoderStatus.OK) {
+         // sprawdź, czy otrzymaliśmy adres
+         if (results[0]) {
+            // utwórz znacznik na mapie
+            var marker = new google.maps.Marker({
+               position: geoLatLng, 
+               map: map
+            }); 
+            // ustaw adres jako treść i otwórz okno
+            infowindow.setContent(results[0].formatted_address);
+            infowindow.open(map, marker);
+         }
+      } else {
+         alert('Geokodowanie nie powiodło się z powodu: ' + status);
+      }
+   });
+}
+
+// funkcja obliczająca odległość
+function calculateDistance(disLatLng) {
+
+   // skonfiguruj zmienne i obiekty dotyczące odległości
+   var conEarth = 6371;  // średni promień Ziemi w kilometrach
+   var gmapsSpherLib = google.maps.geometry.spherical;
+
+   // interesujące Cię punkty
+   var WARLatLng = new google.maps.LatLng(52.229676,21.012229);
+   var WROLatLng = new google.maps.LatLng(51.107885,17.038538);
+   var KRALatLng = new google.maps.LatLng(50.06465,19.94498);
+
+   // obliczenia odległości
+   var distFromWAR = gmapsSpherLib.computeDistanceBetween(disLatLng,WARLatLng,conEarth).toFixed(2);
+   var distFromWRO = gmapsSpherLib.computeDistanceBetween(disLatLng,WROLatLng,conEarth).toFixed(2);
+   var distFromKRA = gmapsSpherLib.computeDistanceBetween(disLatLng,KRALatLng,conEarth).toFixed(2);
+
+   // ustaw wartości do wyświetlenia
+   document.getElementById('divDistFromWAR').innerHTML = distFromWAR + ' km';
+   document.getElementById('divDistFromWRO').innerHTML = distFromWRO + ' km';
+   document.getElementById('divDistFromKRA').innerHTML = distFromKRA + ' km';
+}
+
+// procedura obsługi błędu dla getCurrentPosition
+function geoErrorHandler(error) {
+
+   // inicjalizuj komunikat błędu
+   var errMessage = 'BŁĄD: ';
+
+   // określ komunikaty odpowiadające parametrom kodu błędu
+   switch(error.code)
+   {
+   case error.PERMISSION_DENIED: 
+      errMessage += 'Użytkownik nie udostępnił danych o położeniu geograficznym.';
+      break;
+   case error.POSITION_UNAVAILABLE: 
+      errMessage += 'Nie mogę wykryć aktualnego położenia.';
+      break;
+   case error.TIMEOUT: 
+      errMessage += 'Uzyskiwanie położenia przekroczyło limit czasowy.';
+      break;
+   default: 
+      errMessage += 'Nieznany błąd.';
+      break;
+   }
+
+   // wyświetl błąd użytkownikowi
+   document.getElementById('geoStatus').innerHTML = errMessage;
+}
+
+// funkcja inicjalizująca wywołanie dotyczące położenia
+function setLocation() {
+
+   var divStatus = document.getElementById('geoStatus');
+
+   // sprawdź obsługę położenia geograficznego
+   if (navigator.geolocation) {
+
+      // maksymalny okres ważności informacji to 1 minuta, a limitu czasu — 30 sekund
+      var posOptions = {maximumAge:60000, 
+                        timeout:30000};
+
+      // wykonaj asynchroniczne wywołanie getCurrentPosition
+      navigator.geolocation.getCurrentPosition(geoSuccess, geoErrorHandler, posOptions);
+      divStatus.innerHTML = 'Pozyskiwanie Twojego położenia.';
+
+   } else {
+      // Geolocation API nie jest obsługiwane
+      divStatus.innerHTML = 'Geolocation API nie jest obsługiwane';
+  }
+}
+
+// uruchom pozyskiwanie informacji o lokalizacji
+window.addEventListener('load',setLocation,false);
+
+</script>
+</head>
+<body>
+<div id="container">
+   <div id="mapCanvas"></div>
+   <div id="location">
+      <table id="status">
+         <tr>
+            <td colspan="2"><div id="geoStatus"></div></td>
+         </tr>
+         <tr>
+            <td>Szerokość geograficzna:</td>
+            <td class="numDistance"><div id="myPosLat"></div></td>
+         </tr>
+         <tr>
+            <td>Długość geograficzna:</td>
+            <td class="numDistance"><div id="myPosLng"></div></td>
+         </tr>
+      </table>
+   </div>
+   <div id="distance">
+      <table id="cityDistance">
+         <tr>
+            <td>Warszawa:</td>
+            <td class="numDistance"><div id="divDistFromWAR"></div></td>
+         </tr>
+         <tr>
+            <td>Wrocław:</td>
+            <td class="numDistance"><div id="divDistFromWRO"></div></td>
+         </tr>
+         <tr>
+            <td>Kraków:</td>
+            <td class="numDistance"><div id="divDistFromKRA"></div></td>
+         </tr>
+      </table>
+   </div>
+</div>
+</body>
+</html>
