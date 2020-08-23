@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="css/style.css" rel="stylesheet">
+        <script>
+            function checkStorage(){
+                if(window.localStorage) {
+                    var key, value, field;
+                    for(var i=0; i<localStorage.length;i++){
+                        key = localStorage.key(i);
+                        field = document.getElementById(key);
+                        if(field){
+                            value = unescape(localStorage.getItem(key));
+                            field.value = value;
+                        }
+                    }
+                }
+            }
+
+            function changeField(formField){
+
+                if(window.localStorage){
+                    var key,value;
+                    key = formField.id;
+                    value = escape(formField.value);
+                    try{
+                        localStorage.setItem(key,value);
+                    }
+                    catch(err){
+                        if(err.code == QUOTA_EXCEEDED_ERR){
+                            alert("Za mało miejsca w pamięci");
+                        }
+                    }
+                }else {
+                    alert("LocalStorage nie jest obsługiwane!");
+                }
+            }
+
+            window.addEventListener("load",checkStorage,false);
+
+        </script>
+    </head>
+    <body>
+        <h3>Analiza formularza</h3>
+        <form id="mojaForma">
+            <table>
+
+                <tr>
+                    <td>Imię</td>
+                    <td><input type="text" id="firstName" onchange="changeField(this);"></td>
+                </tr>
+                <tr>
+                    <td>Nazwisko</td>
+                    <td><input type="text" id="lastName" onchange="changeField(this);"></td>
+                </tr>
+                <tr>
+                    <td>E-mail</td>
+                    <td><input type="email" id="email" onchange="changeField(this);"></td>
+                </tr>
+                <tr>
+                    <td>Telefon</td>
+                    <td><input type="tel" id="phone" onchange="changeField(this);"></td>
+                </tr>
+            </table>
+
+        </form>
+
+
+    </body>
+</html>
